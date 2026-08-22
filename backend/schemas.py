@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 class PatientData(BaseModel):
     Age: int
@@ -21,3 +21,13 @@ class PatientData(BaseModel):
     Exercise_Days_Per_Week: int
     Breastfeeding_History: str
     Annual_Income_USD: int
+
+class BatchPatientData(BaseModel):
+    patients: List[PatientData]
+
+class PredictionResponse(BaseModel):
+    prediction: str
+    probability: float
+
+class BatchPredictionResponse(BaseModel):
+    predictions: List[PredictionResponse]
