@@ -177,19 +177,20 @@ elif page == "Prediction":
             hormone_therapy = st.selectbox("Hormone Therapy", ["No", "Yes"])
             menopause_status = st.selectbox("Menopause Status", ["Pre", "Post", "Not Applicable"])
             genetic_mutation = st.selectbox("Genetic Mutation", ["Negative", "Positive"])
-            tumor_size = st.number_input("Tumor Size (cm)", min_value=0.0, max_value=10.0, value=2.5)
-            lymph_node = st.selectbox("Lymph Node Involvement", ["No", "Yes"])
-            mammogram = st.selectbox("Mammogram Result", ["Normal", "Suspicious"])
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                blood_pressure = st.number_input("Blood Pressure (Systolic)", min_value=80, max_value=200, value=120)
+                cholesterol = st.number_input("Cholesterol", min_value=100, max_value=400, value=200)
+            with c2:
+                diabetes = st.selectbox("Diabetes", ["No", "Yes"])
+                breastfeeding = st.selectbox("Breastfeeding History", ["No", "Yes", "Not Applicable"])
 
         with col3:
-            bp = st.number_input("Blood Pressure", min_value=80, max_value=200, value=120)
-            chol = st.number_input("Cholesterol", min_value=100, max_value=400, value=200)
-            diabetes = st.selectbox("Diabetes", ["No", "Yes"])
-            exercise = st.number_input("Exercise Days/Week", min_value=0, max_value=7, value=3)
-            breastfeeding = st.selectbox("Breastfeeding History", ["Yes", "No", "Not Applicable"])
-            income = st.number_input("Annual Income USD", min_value=0, max_value=500000, value=60000)
+            exercise_days = st.number_input("Exercise Days/Week", min_value=0, max_value=7, value=3)
+            annual_income = st.number_input("Annual Income (USD)", min_value=10000, max_value=500000, value=60000)
             
-        submit = st.form_submit_button("Predict")
+        submit = st.form_submit_button("Predict Risk")
 
     if submit:
         payload = {
@@ -203,15 +204,12 @@ elif page == "Prediction":
             "Hormone_Therapy": hormone_therapy,
             "Menopause_Status": menopause_status,
             "Genetic_Mutation": genetic_mutation,
-            "Tumor_Size_cm": tumor_size,
-            "Lymph_Node_Involvement": lymph_node,
-            "Mammogram_Result": mammogram,
-            "Blood_Pressure": bp,
-            "Cholesterol": chol,
+            "Blood_Pressure": blood_pressure,
+            "Cholesterol": cholesterol,
             "Diabetes": diabetes,
-            "Exercise_Days_Per_Week": exercise,
+            "Exercise_Days_Per_Week": exercise_days,
             "Breastfeeding_History": breastfeeding,
-            "Annual_Income_USD": income
+            "Annual_Income_USD": annual_income
         }
         
         try:

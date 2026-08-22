@@ -42,7 +42,7 @@ df.head()""",
 df.drop_duplicates(inplace=True)
 
 # Drop Patient_ID and leaky features
-cols_to_drop = ['Patient_ID', 'Biopsy_Result', 'Cancer_Stage']
+cols_to_drop = ['Patient_ID', 'Biopsy_Result', 'Cancer_Stage', 'Mammogram_Result', 'Lymph_Node_Involvement', 'Tumor_Size_cm']
 for col in cols_to_drop:
     if col in df.columns:
         df.drop(col, axis=1, inplace=True)

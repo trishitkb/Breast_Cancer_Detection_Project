@@ -15,7 +15,7 @@ sns.set_theme(style="whitegrid")
 print("Loading data...")
 df = pd.read_csv('data/raw/breast_cancer_prediction.csv')
 df.drop_duplicates(inplace=True)
-cols_to_drop = ['Patient_ID', 'Biopsy_Result', 'Cancer_Stage']
+cols_to_drop = ['Patient_ID', 'Biopsy_Result', 'Cancer_Stage', 'Mammogram_Result', 'Lymph_Node_Involvement', 'Tumor_Size_cm']
 for col in cols_to_drop:
     if col in df.columns:
         df.drop(col, axis=1, inplace=True)
@@ -34,7 +34,7 @@ plt.savefig('reports/figures/class_distribution_pie.png', bbox_inches='tight')
 plt.close()
 
 # Boxplot Grid for top features
-top_features = ['Age', 'BMI', 'Tumor_Size_cm', 'Blood_Pressure']
+top_features = ['Age', 'BMI', 'Cholesterol', 'Blood_Pressure']
 plt.figure(figsize=(12, 10))
 for i, feature in enumerate(top_features):
     if feature in X.columns:

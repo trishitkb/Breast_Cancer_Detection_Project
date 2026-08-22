@@ -77,9 +77,6 @@ class PatientData(BaseModel):
     Hormone_Therapy: str
     Menopause_Status: str
     Genetic_Mutation: str
-    Tumor_Size_cm: float
-    Lymph_Node_Involvement: str
-    Mammogram_Result: str
     Blood_Pressure: int
     Cholesterol: int
     Diabetes: str

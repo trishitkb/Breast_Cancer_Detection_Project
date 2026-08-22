@@ -30,10 +30,16 @@ The project is built on a modular architecture to separate concerns:
 6. **Persistence**: Pipeline and metadata saved to `models/`.
 
 ## Results
-The Champion Model achieved exceptional performance by prioritizing recall:
-- **Recall (Malignant)**: 0.96 (optimized for threshold ~0.3)
-- **Catch Rate**: Minimizes false negatives aggressively, meaning 96% of true malignant cases are successfully identified, minimizing catastrophic clinical misses.
-- **Explainability**: Top drivers for malignancy predictions typically include features like `Age`, `Tumor_Size_cm`, and `BMI`, as visualized by SHAP dependence and force plots in the Streamlit dashboard.
+The system evaluates multiple models and threshold optimizations to prioritize minimizing false negatives.
+After removing diagnostic data leakage (e.g., Mammogram Results, Tumor Size) to ensure the model acts as a purely predictive screening tool, the champion model is **Gradient Boosting (Undersampled Dataset)**.
+
+**Metrics (Purely Predictive Model):**
+- **ROC AUC:** ~0.885
+- **Recall (Optimized Threshold):** ~0.933 (High sensitivity for clinical screening)
+- **Precision (Optimized Threshold):** ~0.418 (Acceptable for screening where false positives are resolved by mammogram)
+
+This ensures the model serves as an effective early-warning system based purely on patient risk factors.
+- **Explainability**: Top drivers for malignancy predictions typically include features like `Age`, `BMI`, and `Family_History`, as visualized by SHAP dependence and force plots in the Streamlit dashboard.
 
 ## Installation
 
