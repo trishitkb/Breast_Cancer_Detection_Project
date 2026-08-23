@@ -1,0 +1,3 @@
+scenario,threshold,FP,FN,TP,TN,FP_cost_assumption,FN_cost_assumption,illustrative_total_cost
+pre_diagnostic,0.22988068091503486,460,24,266,750,5000,100000,4700000
+diagnostic_assessment,0.4314526737352825,90,15,275,1120,5000,100000,1950000
