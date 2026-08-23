@@ -30,11 +30,13 @@ post_pipeline = None
 metadata = None
 pre_explainer = None
 post_explainer = None
+pre_features = []
+post_features = []
 HISTORY_FILE = config.HISTORY_FILE
 
 @app.on_event("startup")
 def load_assets():
-    global pre_pipeline, post_pipeline, metadata, pre_explainer, post_explainer
+    global pre_pipeline, post_pipeline, metadata, pre_explainer, post_explainer, pre_features, post_features
     logger.info("Loading model pipelines and metadata...")
     
     try:
@@ -42,34 +44,35 @@ def load_assets():
         with open('models/model_metadata.json', "r", encoding="utf-8") as f:
             metadata = json.load(f)
             
+        pre_features = metadata['pre_diagnostic']['features']
+        post_features = metadata['diagnostic_assessment']['features']
+
         # Load Pre-Diagnostic Model
         pre_pipeline = joblib.load('models/pre_diagnostic_pipeline.pkl')
         
         # Load Post-Diagnostic Model
         post_pipeline = joblib.load('models/diagnostic_assessment_pipeline.pkl')
 
-        # Dynamically generate SHAP background data from raw dataset
+        # Dynamically generate SHAP background data strictly aligned with training features
         raw_path = 'data/raw/breast_cancer_prediction.csv'
         if os.path.exists(raw_path):
             df_raw = pd.read_csv(raw_path)
-            pre_drop = ["Cancer", "Patient_ID", "Biopsy_Result", "Cancer_Stage", "Mammogram_Result", "Lymph_Node_Involvement", "Tumor_Size_cm"]
-            post_drop = ["Cancer", "Patient_ID", "Biopsy_Result", "Cancer_Stage"]
             
-            bg_pre = df_raw.drop(columns=[c for c in pre_drop if c in df_raw.columns]).sample(n=min(50, len(df_raw)), random_state=42)
-            bg_post = df_raw.drop(columns=[c for c in post_drop if c in df_raw.columns]).sample(n=min(50, len(df_raw)), random_state=42)
+            bg_pre = df_raw[pre_features].sample(n=min(50, len(df_raw)), random_state=42)
+            bg_post = df_raw[post_features].sample(n=min(50, len(df_raw)), random_state=42)
             
             def predict_fn_pre(X):
                 if isinstance(X, np.ndarray):
-                    X = pd.DataFrame(X, columns=bg_pre.columns)
+                    X = pd.DataFrame(X, columns=pre_features)
                 return pre_pipeline.predict_proba(X)[:, 1]
             pre_explainer = shap.KernelExplainer(predict_fn_pre, bg_pre)
             
             def predict_fn_post(X):
                 if isinstance(X, np.ndarray):
-                    X = pd.DataFrame(X, columns=bg_post.columns)
+                    X = pd.DataFrame(X, columns=post_features)
                 return post_pipeline.predict_proba(X)[:, 1]
             post_explainer = shap.KernelExplainer(predict_fn_post, bg_post)
-            logger.info("Models and SHAP explainers initialized successfully.")
+            logger.info("Models and SHAP explainers initialized successfully with aligned features.")
         else:
             logger.warning("Raw dataset not found; SHAP explainers skipped.")
             
@@ -142,19 +145,23 @@ def predict(patient: PatientData):
            patient.Tumor_Size_cm is not None and patient.Tumor_Size_cm > 0.0:
             has_diagnostic = True
 
-        df = pd.DataFrame([patient.dict()])
+        raw_dict = patient.dict()
         
         if has_diagnostic:
             pipeline = post_pipeline
             explainer = post_explainer
             scenario = "diagnostic_assessment"
             model_type = "Post-Test Diagnostic Classification"
+            features = post_features
         else:
             pipeline = pre_pipeline
             explainer = pre_explainer
             scenario = "pre_diagnostic"
             model_type = "Pre-Test Risk Assessment"
-            df.drop(['Mammogram_Result', 'Lymph_Node_Involvement', 'Tumor_Size_cm'], axis=1, inplace=True, errors='ignore')
+            features = pre_features
+        
+        # Build DataFrame with strictly ordered feature columns
+        df = pd.DataFrame([{col: raw_dict.get(col) for col in features}])
         
         # Predict probability
         prob = pipeline.predict_proba(df)[0, 1]
@@ -166,7 +173,7 @@ def predict(patient: PatientData):
         # Calculate Local SHAP values
         shap_values_dict = {}
         if explainer is not None:
-            shap_vals = explainer.shap_values(df)
+            shap_vals = explainer.shap_values(df, nsamples=50)
             vals = np.array(shap_vals)
             if len(vals.shape) == 2:
                 vals = vals[0]
@@ -205,40 +212,42 @@ def predict_batch(batch: BatchPatientData):
         predictions_list = []
         model_types_list = []
         
-        df = pd.DataFrame([p.dict() for p in batch.patients])
-        
-        for index, row in df.iterrows():
-            has_diagnostic = (row.get('Mammogram_Result') and row.get('Mammogram_Result') != "Not Tested" and 
-                              row.get('Lymph_Node_Involvement') and row.get('Lymph_Node_Involvement') != "Not Tested" and 
-                              row.get('Tumor_Size_cm') is not None and row.get('Tumor_Size_cm') > 0.0)
+        for p in batch.patients:
+            raw_dict = p.dict()
+            has_diagnostic = (raw_dict.get('Mammogram_Result') and raw_dict.get('Mammogram_Result') != "Not Tested" and 
+                              raw_dict.get('Lymph_Node_Involvement') and raw_dict.get('Lymph_Node_Involvement') != "Not Tested" and 
+                              raw_dict.get('Tumor_Size_cm') is not None and float(raw_dict.get('Tumor_Size_cm') or 0.0) > 0.0)
             
-            row_df = pd.DataFrame([row])
             if has_diagnostic:
                 pipeline = post_pipeline
                 scenario = "diagnostic_assessment"
                 model_type = "Post-Test Diagnostic Classification"
+                features = post_features
             else:
                 pipeline = pre_pipeline
                 scenario = "pre_diagnostic"
                 model_type = "Pre-Test Risk Assessment"
-                row_df.drop(['Mammogram_Result', 'Lymph_Node_Involvement', 'Tumor_Size_cm'], axis=1, inplace=True, errors='ignore')
+                features = pre_features
                 
+            row_df = pd.DataFrame([{col: raw_dict.get(col) for col in features}])
             prob = pipeline.predict_proba(row_df)[0, 1]
             threshold = metadata.get(scenario, {}).get("threshold", 0.5)
             pred = 1 if prob >= threshold else 0
             
             results.append({
                 "prediction": int(pred),
-                "cancer_risk": "High Risk" if pred == 1 else "Low Risk",
+                "cancer_risk": "High Risk (Malignant)" if pred == 1 else "Low Risk (Benign)",
                 "probability": float(prob),
+                "threshold_used": float(threshold),
                 "model_type": model_type
             })
             probabilities_list.append(prob)
             predictions_list.append(pred)
             model_types_list.append(model_type)
             
-        save_prediction_history(df, probabilities_list, predictions_list, model_types_list)
-        logger.info(f"Batch prediction completed for {len(df)} records.")
+        full_df = pd.DataFrame([p.dict() for p in batch.patients])
+        save_prediction_history(full_df, probabilities_list, predictions_list, model_types_list)
+        logger.info(f"Batch prediction completed for {len(batch.patients)} records.")
         return {"predictions": results}
         
     except Exception as e:
