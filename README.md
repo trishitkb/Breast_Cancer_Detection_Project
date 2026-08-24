@@ -20,10 +20,13 @@ The system features a **FastAPI** backend that dynamically routes requests to th
 ```
 Breast_Cancer_Detection_Project/
 ├── backend/
-│   ├── main.py                     # FastAPI server with dynamic model routing & SHAP explainers
-│   ├── config.py                   # Configuration & path management
-│   ├── schemas.py                  # Pydantic data schemas
-│   └── retrain.py                  # Retraining script
+│   ├── main.py                     # FastAPI server with dynamic model routing, schemas & SHAP explainers
+│   └── config.py                   # Configuration & path management
+├── documentation/
+│   ├── installation_and_usage.md            # Setup and user guide
+│   ├── architecture_and_pipeline.md         # Technical breakdown
+│   ├── tech_selection_strategy.md           # Rationale behind tools
+│   └── presentation_suggestions.md          # Pitch outline & speaker notes
 ├── frontend/
 │   └── app.py                      # Streamlit interactive clinical dashboard
 ├── notebook/
@@ -134,8 +137,8 @@ Open your browser at `http://localhost:8501`.
 - **Adaptive Engine Routing**: Automatically activates the Pre-Diagnostic or Diagnostic-Assessment model based on provided test results.
 - **Visual Risk Gauge**: Real-time probability gauge with clinical alert thresholds.
 - **Explainable AI (XAI)**: Dynamic horizontal bar chart illustrating patient-specific SHAP values (top positive and negative contributors).
-- **Batch Processing**: Upload custom patient CSVs (e.g. `test.csv`) for bulk scoring and CSV export.
-- **PDF Report Generation**: Instantly downloads a formatted clinical risk assessment summary.
+- **Batch Processing**: Upload custom patient CSVs (e.g. `test.csv`) for bulk scoring. Invalid/missing data rows are automatically extracted into a separate downloadable CSV, while valid rows are scored. The system then generates and zips individual PDF reports categorized into `safe/` and `critical/` folders for instant download.
+- **PDF Report Generation**: Instantly downloads a formatted clinical risk assessment summary for single or bulk patients.
 - **Model Performance Tab**: Interactive review of held-out test confusion matrices, ROC/PR curves, calibration plots, and SHAP summary plots.
 
 ---
