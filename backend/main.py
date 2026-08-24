@@ -37,6 +37,8 @@ HISTORY_FILE = config.HISTORY_FILE
 @app.on_event("startup")
 def load_assets():
     global pre_pipeline, post_pipeline, metadata, pre_explainer, post_explainer, pre_features, post_features
+    import sklearn
+    logger.info(f"Loaded scikit-learn version: {sklearn.__version__}")
     logger.info("Loading model pipelines and metadata...")
     
     try:
