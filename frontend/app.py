@@ -9,6 +9,12 @@ import numpy as np
 # Streamlit config
 st.set_page_config(page_title="Breast Cancer Prediction", layout="wide", page_icon="🎗️", initial_sidebar_state="expanded")
 
+# API Connection Config
+if "API_URL" in st.secrets:
+    BACKEND_URL = st.secrets["API_URL"]
+else:
+    BACKEND_URL = os.getenv("API_URL", "http://localhost:8000")
+
 # --- CUSTOM CSS ---
 st.markdown("""
 <style>
@@ -1273,13 +1279,14 @@ elif page == "Hybrid Prediction":
             }
             
             try:
-                response = requests.post("http://localhost:8000/predict", json=payload)
-                if response.status_code == 200:
-                    st.session_state.prediction_result = response.json()
-                    st.rerun()  # Rerun to update the download button immediately
-                else:
-                    st.error(f"Error from API: {response.text}")
-                    st.session_state.prediction_result = None
+                with st.spinner("Analyzing patient data & explaining risk factors..."):
+                    response = requests.post(f"{BACKEND_URL}/predict", json=payload)
+                    if response.status_code == 200:
+                        st.session_state.prediction_result = response.json()
+                        st.rerun()  # Rerun to update the download button immediately
+                    else:
+                        st.error(f"Error from API: {response.text}")
+                        st.session_state.prediction_result = None
             except requests.exceptions.ConnectionError:
                 st.error("Cannot connect to backend.")
                 st.session_state.prediction_result = None
@@ -1429,7 +1436,7 @@ elif page == "Batch Processing":
                     payload = {"patients": patients_list}
                     
                     with st.spinner("Generating predictions and PDF reports..."):
-                        response = requests.post("http://localhost:8000/predict_batch", json=payload)
+                        response = requests.post(f"{BACKEND_URL}/predict_batch", json=payload)
                         if response.status_code == 200:
                             results = response.json()['predictions']
                             
